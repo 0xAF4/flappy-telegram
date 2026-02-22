@@ -382,14 +382,14 @@ function checkCollision(pipe) {
   return false;
 }
 
-function update() {
+function update(scale = 1) {
   frame++;
   bird.wingFrame++;
 
   if (state !== 'playing') return;
 
-  bird.vy += bird.gravity;
-  bird.y += bird.vy;
+  bird.vy += bird.gravity * scale;
+  bird.y += bird.vy * scale;
   bird.angle = Math.min(Math.max(bird.vy * 0.06, -0.5), 1.2);
 
   if (bird.y - bird.r < 0) { bird.y = bird.r; bird.vy = 0; }
@@ -399,10 +399,10 @@ function update() {
     return;
   }
 
-  pipeTimer++;
+  pipeTimer += scale;
   if (pipeTimer >= PIPE_INTERVAL) { pipeTimer = 0; spawnPipe(); }
 
-  pipes.forEach(p => { p.x -= PIPE_SPEED; });
+  pipes.forEach(p => { p.x -= PIPE_SPEED * scale; });
   pipes = pipes.filter(p => p.x > -PIPE_W - 20);
 
   pipes.forEach(p => {
@@ -448,13 +448,27 @@ function draw() {
   }
 }
 
-function loop() {
-  update();
+let lastTime = null;
+const TARGET_FPS = 60;
+const FIXED_STEP = 1000 / TARGET_FPS;
+
+function loop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  let delta = timestamp - lastTime;
+  lastTime = timestamp;
+
+  // Ограничиваем delta чтобы не было рывка после сворачивания вкладки
+  if (delta > 100) delta = 100;
+
+  // Нормализуем: на 60fps = 1.0, на 120fps = 0.5, на 30fps = 2.0
+  const scale = delta / FIXED_STEP;
+
+  update(scale);
   draw();
   requestAnimationFrame(loop);
 }
 
-loop();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
