@@ -39,16 +39,6 @@
     border-radius: 4px;
   }
 
-  #ui {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-
   #score {
     position: absolute;
     top: 20px;
@@ -83,6 +73,7 @@
     text-shadow: 3px 3px 0 #c44bff, 0 0 30px #ff6b9d;
     line-height: 1.6;
     animation: pulse 1s ease-in-out infinite alternate;
+    white-space: pre-line;
   }
 
   #screen .subtitle {
@@ -132,15 +123,11 @@
 </div>
 
 <script>
+// Telegram Mini App init
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
-
-tg.setHeaderColor('#1a0a2e'); // цвет шапки под стиль игры
-tg.BackButton.show();
-tg.BackButton.onClick(() => tg.close());
-
-tg.sendData(JSON.stringify({ score: score, best: best }));
+try { tg.setHeaderColor('#1a0a2e'); } catch(e) {}
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -151,7 +138,7 @@ const screen = document.getElementById('screen');
 const bestDisplay = document.getElementById('bestDisplay');
 
 // Game state
-let state = 'idle'; // idle, playing, dead
+let state = 'idle';
 let score = 0;
 let best = 0;
 let frame = 0;
@@ -188,20 +175,13 @@ const stars = Array.from({length: 80}, () => ({
 const GROUND_H = 80;
 const GROUND_Y = H - GROUND_H;
 
-// Colors
 const C = {
-  sky1: '#0d0621',
-  sky2: '#1a0a2e',
   pipe: '#22c55e',
   pipeGlow: '#4ade80',
-  pipeDark: '#15803d',
   bird: '#fbbf24',
   birdEye: '#1a0a2e',
   birdWing: '#f59e0b',
   birdBeak: '#f97316',
-  ground: '#7c3aed',
-  groundTop: '#a855f7',
-  groundStripe: '#6d28d9',
 };
 
 function reset() {
@@ -226,13 +206,13 @@ function flap() {
     bird.vy = bird.jump;
   } else if (state === 'dead') {
     state = 'idle';
-    screen.classList.remove('hidden');
+    screen.querySelector('h1').textContent = '🐦 FLAPPY\nBIRD';
+    screen.querySelector('.subtitle').textContent = 'NEON EDITION';
     bestDisplay.textContent = 'BEST: ' + best;
-    screen.querySelector('h1').textContent = score > 0 ? '💀 GAME\nOVER' : '🐦 FLAPPY\nBIRD';
+    screen.classList.remove('hidden');
   }
 }
 
-// Input
 document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); flap(); }});
 canvas.addEventListener('click', flap);
 screen.addEventListener('click', flap);
@@ -245,14 +225,12 @@ function spawnPipe() {
 }
 
 function drawBackground() {
-  // Sky gradient
   const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
   grad.addColorStop(0, '#05020f');
   grad.addColorStop(1, '#1a0a2e');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, GROUND_Y);
 
-  // Stars
   stars.forEach(s => {
     s.x -= s.speed;
     if (s.x < 0) { s.x = W; s.y = Math.random() * GROUND_Y; }
@@ -262,7 +240,6 @@ function drawBackground() {
     ctx.fill();
   });
 
-  // Distant neon mountains
   ctx.fillStyle = '#2d1054';
   ctx.beginPath();
   ctx.moveTo(0, GROUND_Y);
@@ -274,7 +251,6 @@ function drawBackground() {
   ctx.closePath();
   ctx.fill();
 
-  // Mountain outline glow
   ctx.strokeStyle = '#7c3aed44';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -287,14 +263,12 @@ function drawBackground() {
 }
 
 function drawGround() {
-  // Ground base
   const gGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
   gGrad.addColorStop(0, '#6d28d9');
   gGrad.addColorStop(1, '#3b0764');
   ctx.fillStyle = gGrad;
   ctx.fillRect(0, GROUND_Y, W, GROUND_H);
 
-  // Top line glow
   ctx.strokeStyle = '#a855f7';
   ctx.lineWidth = 3;
   ctx.shadowColor = '#a855f7';
@@ -305,7 +279,6 @@ function drawGround() {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Stripes
   const stripeOffset = (frame * PIPE_SPEED) % 40;
   ctx.fillStyle = '#5b21b6';
   for (let x = -40 + stripeOffset; x < W + 40; x += 40) {
@@ -319,11 +292,9 @@ function drawPipe(pipe) {
   const botH = GROUND_Y - botY;
   const x = pipe.x;
 
-  // Glow
   ctx.shadowColor = C.pipeGlow;
   ctx.shadowBlur = 15;
 
-  // Draw top pipe
   const pg1 = ctx.createLinearGradient(x, 0, x + PIPE_W, 0);
   pg1.addColorStop(0, '#15803d');
   pg1.addColorStop(0.4, '#22c55e');
@@ -331,19 +302,15 @@ function drawPipe(pipe) {
   ctx.fillStyle = pg1;
   ctx.fillRect(x, 0, PIPE_W, topH - 10);
 
-  // Top cap
   ctx.fillStyle = '#4ade80';
   ctx.fillRect(x - 5, topH - 22, PIPE_W + 10, 22);
 
-  // Bottom pipe
   ctx.fillStyle = pg1;
   ctx.fillRect(x, botY + 10, PIPE_W, botH);
 
-  // Bottom cap
   ctx.fillStyle = '#4ade80';
   ctx.fillRect(x - 5, botY, PIPE_W + 10, 22);
 
-  // Shine
   ctx.fillStyle = 'rgba(255,255,255,0.15)';
   ctx.fillRect(x + 8, 0, 8, topH - 10);
   ctx.fillRect(x + 8, botY + 10, 8, botH);
@@ -356,20 +323,17 @@ function drawBird() {
   ctx.translate(bird.x, bird.y);
   ctx.rotate(bird.angle);
 
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
   ctx.ellipse(3, bird.r + 4, bird.r * 0.8, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Wing animation
   const wingY = Math.sin(bird.wingFrame * 0.4) * 4;
   ctx.fillStyle = C.birdWing;
   ctx.beginPath();
   ctx.ellipse(-6, wingY, 10, 7, -0.3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Body
   ctx.shadowColor = '#fbbf24';
   ctx.shadowBlur = 12;
   ctx.fillStyle = C.bird;
@@ -378,13 +342,11 @@ function drawBird() {
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  // Belly
   ctx.fillStyle = '#fde68a';
   ctx.beginPath();
   ctx.arc(4, 4, 9, 0, Math.PI * 2);
   ctx.fill();
 
-  // Eye
   ctx.fillStyle = '#fff';
   ctx.beginPath();
   ctx.arc(7, -5, 6, 0, Math.PI * 2);
@@ -395,13 +357,11 @@ function drawBird() {
   ctx.arc(9, -5, 3.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Pupil gleam
   ctx.fillStyle = '#fff';
   ctx.beginPath();
   ctx.arc(10, -6, 1.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Beak
   ctx.fillStyle = C.birdBeak;
   ctx.beginPath();
   ctx.moveTo(12, -2);
@@ -428,21 +388,17 @@ function update() {
 
   if (state !== 'playing') return;
 
-  // Bird physics
   bird.vy += bird.gravity;
   bird.y += bird.vy;
   bird.angle = Math.min(Math.max(bird.vy * 0.06, -0.5), 1.2);
 
-  // Ceiling
   if (bird.y - bird.r < 0) { bird.y = bird.r; bird.vy = 0; }
 
-  // Ground
   if (bird.y + bird.r > GROUND_Y) {
     die();
     return;
   }
 
-  // Pipes
   pipeTimer++;
   if (pipeTimer >= PIPE_INTERVAL) { pipeTimer = 0; spawnPipe(); }
 
@@ -466,6 +422,11 @@ function die() {
   screen.querySelector('.subtitle').textContent = 'SCORE: ' + score;
   bestDisplay.textContent = 'BEST: ' + best;
   screen.classList.remove('hidden');
+
+  // Отправляем счёт в Telegram (работает только внутри бота)
+  try {
+    tg.sendData(JSON.stringify({ score: score, best: best }));
+  } catch(e) {}
 }
 
 function draw() {
@@ -482,7 +443,6 @@ function draw() {
   drawGround();
   drawBird();
 
-  // Idle hover
   if (state === 'idle') {
     bird.y = H / 2 + Math.sin(frame * 0.05) * 8;
   }
